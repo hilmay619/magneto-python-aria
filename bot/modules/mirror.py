@@ -2,10 +2,10 @@ import requests
 from telegram.ext import CommandHandler, run_async
 from telegram import InlineKeyboardMarkup
 
-from bot import Interval, INDEX_URL, BUTTON_THREE_NAME, BUTTON_THREE_URL, BUTTON_FOUR_NAME, BUTTON_FOUR_URL, BUTTON_FIVE_NAME, BUTTON_FIVE_URL, BLOCK_MEGA_LINKS
+from bot import Interval, INDEX_URL, BUTTON_THREE_NAME, BUTTON_THREE_URL, BUTTON_FOUR_NAME, BUTTON_FOUR_URL, BUTTON_FIVE_NAME, BUTTON_FIVE_URL, BLOCK_MEGA_LINKS, BLOCK_MEGA_FOLDER
 from bot import dispatcher, DOWNLOAD_DIR, DOWNLOAD_STATUS_UPDATE_INTERVAL, download_dict, download_dict_lock, SHORTENER, SHORTENER_API
 from bot.helper.ext_utils import fs_utils, bot_utils
-from bot.helper.ext_utils.bot_utils import setInterval
+from bot.helper.ext_utils.bot_utils import setInterval, get_mega_link_type
 from bot.helper.ext_utils.exceptions import DirectDownloadLinkException, NotSupportedExtractionArchive
 from bot.helper.mirror_utils.download_utils.aria2_download import AriaDownloadHelper
 from bot.helper.mirror_utils.download_utils.mega_downloader import MegaDownloadHelper
@@ -257,8 +257,11 @@ def _mirror(bot, update, isTar=False, extract=False):
         LOGGER.info(f'{link}: {e}')
     listener = MirrorListener(bot, update, pswd, isTar, tag, extract)
     if bot_utils.is_mega_link(link):
-        if BLOCK_MEGA_LINKS:
-            sendMessage("Mega links are blocked bcoz mega downloading is too much unstable and buggy. mega support will be added back after fix", bot, update)
+        link_type = get_mega_link_type(link)
+        if link_type == "folder" and BLOCK_MEGA_FOLDER:
+            sendMessage("Mega Folder are blocked bcoz mega folder make the bot crash/shutdown. Mega support will be added back after fix", bot, update)
+        elif BLOCK_MEGA_LINKS:
+            sendMessage("Mega Links are blocked bcoz mega downloading is too much unstable and buggy. mega support will be added back after fix", bot, update)
         else:
             mega_dl = MegaDownloadHelper()
             mega_dl.add_download(link, f'{DOWNLOAD_DIR}/{listener.uid}/', listener)
@@ -269,7 +272,7 @@ def _mirror(bot, update, isTar=False, extract=False):
     if len(Interval) == 0:
         Interval.append(setInterval(DOWNLOAD_STATUS_UPDATE_INTERVAL, update_all_messages))
 
-
+        
 @run_async
 def mirror(update, context):
     _mirror(context.bot, update)
