@@ -145,7 +145,7 @@ def is_magnet(url: str):
         return True
     return False
 
-
+#Mega Folder or Mega File
 def is_mega_link(url: str):
     return "mega.nz" in url
 
